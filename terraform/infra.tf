@@ -12,7 +12,7 @@ resource "google_compute_subnetwork" "default" {
   region        = "asia-northeast1"
 
   stack_type       = "IPV4_IPV6"
-  ipv6_access_type = "INTERNAL" 
+  ipv6_access_type = "INTERNAL"
 
   network = google_compute_network.default.id
   secondary_ip_range {
@@ -88,55 +88,57 @@ resource "google_compute_firewall" "proxy_fw" {
 
 }
 
-# Put name and zone after it is generated after the service deployment
-data "google_compute_network_endpoint_group" "default" {
-  name = "k8s1-a70e9872-default-curl-nodeport-8080-98b4c2bc"
-  zone = "asia-northeast1-c"
-}
+######## UNCOMMENT THE FOLLOWING AFTER YOU DEPLOY THE RESOURCES ON THE GKE CLUSTER #########
 
-resource "google_compute_region_backend_service" "app_backend" {
-  name                  = "app-backend"
-  protocol              = "HTTP"
-  load_balancing_scheme = "INTERNAL_MANAGED"
-  timeout_sec           = 30
-  port_name = "http"
+# # Put name and zone after it is generated after the service deployment
+# data "google_compute_network_endpoint_group" "default" {
+#   name = "k8s1-a70e9872-default-curl-nodeport-8080-98b4c2bc"
+#   zone = "asia-northeast1-c"
+# }
 
-  backend {
-    group                 = data.google_compute_network_endpoint_group.default.id
-    balancing_mode        = "RATE"
-    capacity_scaler = 1.0
-    max_rate_per_endpoint = 100
-  }
+# resource "google_compute_region_backend_service" "app_backend" {
+#   name                  = "app-backend"
+#   protocol              = "HTTP"
+#   load_balancing_scheme = "INTERNAL_MANAGED"
+#   timeout_sec           = 30
+#   port_name = "http"
 
-  health_checks = [google_compute_region_health_check.http.id]
-}
+#   backend {
+#     group                 = data.google_compute_network_endpoint_group.default.id
+#     balancing_mode        = "RATE"
+#     capacity_scaler = 1.0
+#     max_rate_per_endpoint = 100
+#   }
 
-resource "google_compute_region_health_check" "http" {
-  name = "app-hc"
+#   health_checks = [google_compute_region_health_check.http.id]
+# }
 
-  http_health_check {
-    port = "8080"
-    request_path = "/"
-  }
-}
+# resource "google_compute_region_health_check" "http" {
+#   name = "app-hc"
 
-resource "google_compute_region_url_map" "app" {
-  name            = "app-url-map"
-  default_service = google_compute_region_backend_service.app_backend.id
-}
+#   http_health_check {
+#     port = "8080"
+#     request_path = "/"
+#   }
+# }
 
-resource "google_compute_region_target_http_proxy" "app" {
-  name    = "app-http-proxy"
-  url_map = google_compute_region_url_map.app.id
-}
+# resource "google_compute_region_url_map" "app" {
+#   name            = "app-url-map"
+#   default_service = google_compute_region_backend_service.app_backend.id
+# }
 
-resource "google_compute_forwarding_rule" "app" {
-  name                  = "app-forwarding-rule"
-  depends_on            = [google_compute_subnetwork.proxy_subnet]
-  target                = google_compute_region_target_http_proxy.app.id
-  load_balancing_scheme = "INTERNAL_MANAGED"
-  network               = google_compute_network.default.id
-  subnetwork            = google_compute_subnetwork.default.id
-  port_range            = "8080"
-}
+# resource "google_compute_region_target_http_proxy" "app" {
+#   name    = "app-http-proxy"
+#   url_map = google_compute_region_url_map.app.id
+# }
+
+# resource "google_compute_forwarding_rule" "app" {
+#   name                  = "app-forwarding-rule"
+#   depends_on            = [google_compute_subnetwork.proxy_subnet]
+#   target                = google_compute_region_target_http_proxy.app.id
+#   load_balancing_scheme = "INTERNAL_MANAGED"
+#   network               = google_compute_network.default.id
+#   subnetwork            = google_compute_subnetwork.default.id
+#   port_range            = "8080"
+# }
 
